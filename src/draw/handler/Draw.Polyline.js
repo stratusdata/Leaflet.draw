@@ -93,6 +93,10 @@ L.Draw.Polyline = L.Draw.Feature.extend({
 				.on('mouseup', this._onMouseUp, this)
 				.on('zoomlevelschange', this._onZoomEnd, this)
 				.on('click', this._onTouch, this);
+
+			if(this._map._container.className.indexOf('leaflet-touch') != -1) {
+				this._map.on('click', this._onTouch, this);
+			}
 		}
 	},
 
