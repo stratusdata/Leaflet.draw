@@ -142,10 +142,6 @@ L.Edit.Poly = L.Handler.extend({
 	},
 
 	_onMarkerClick: function (e) {
-		if(!this._poly.options.removeMarkerOnClick) {
-			return true;
-		}
-
 		var minPoints = L.Polygon && (this._poly instanceof L.Polygon) ? 4 : 3,
 			marker = e.target;
 
@@ -154,7 +150,6 @@ L.Edit.Poly = L.Handler.extend({
 			return;
 		}
 
-		// remove the marker
 		this._removeMarker(marker);
 
 		// update prev/next links of adjacent markers
@@ -178,7 +173,6 @@ L.Edit.Poly = L.Handler.extend({
 		} else if (!marker._next) {
 			marker._prev._middleRight = null;
 		}
-
 		this._fireEdit();
 	},
 

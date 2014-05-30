@@ -227,8 +227,7 @@ L.Draw.Polyline = L.Draw.Feature.extend({
 			weight: 4,
 			opacity: 0.5,
 			fill: false,
-			clickable: true,
-			removeMarkerOnClick: true
+			clickable: true
 		},
 		metric: true, // Whether to use the metric meaurement system or imperial
 		showLength: true, // Whether to display distance in the tooltip
@@ -291,8 +290,7 @@ L.Draw.Polyline = L.Draw.Feature.extend({
 			this._map
 				.on('mousemove', this._onMouseMove, this)
 				.on('mouseup', this._onMouseUp, this)
-				.on('zoomlevelschange', this._onZoomEnd, this)
-				.on('click', this._onTouch, this);
+				.on('zoomlevelschange', this._onZoomEnd, this);
 
 			if(this._map._container.className.indexOf('leaflet-touch') != -1) {
 				this._map.on('click', this._onTouch, this);
@@ -685,8 +683,7 @@ L.Draw.Polygon = L.Draw.Polyline.extend({
 			fill: true,
 			fillColor: null, //same as color by default
 			fillOpacity: 0.2,
-			clickable: true,
-			removeMarkerOnClick: true
+			clickable: true
 		}
 	},
 
@@ -1233,10 +1230,6 @@ L.Edit.Poly = L.Handler.extend({
 	},
 
 	_onMarkerClick: function (e) {
-		if(!this._poly.options.removeMarkerOnClick) {
-			return true;
-		}
-
 		var minPoints = L.Polygon && (this._poly instanceof L.Polygon) ? 4 : 3,
 			marker = e.target;
 
@@ -1245,7 +1238,6 @@ L.Edit.Poly = L.Handler.extend({
 			return;
 		}
 
-		// remove the marker
 		this._removeMarker(marker);
 
 		// update prev/next links of adjacent markers
@@ -1269,7 +1261,6 @@ L.Edit.Poly = L.Handler.extend({
 		} else if (!marker._next) {
 			marker._prev._middleRight = null;
 		}
-
 		this._fireEdit();
 	},
 

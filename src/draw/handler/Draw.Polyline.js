@@ -28,8 +28,7 @@ L.Draw.Polyline = L.Draw.Feature.extend({
 			weight: 4,
 			opacity: 0.5,
 			fill: false,
-			clickable: true,
-			removeMarkerOnClick: true
+			clickable: true
 		},
 		metric: true, // Whether to use the metric meaurement system or imperial
 		showLength: true, // Whether to display distance in the tooltip
@@ -92,8 +91,7 @@ L.Draw.Polyline = L.Draw.Feature.extend({
 			this._map
 				.on('mousemove', this._onMouseMove, this)
 				.on('mouseup', this._onMouseUp, this)
-				.on('zoomlevelschange', this._onZoomEnd, this)
-				.on('click', this._onTouch, this);
+				.on('zoomlevelschange', this._onZoomEnd, this);
 
 			if(this._map._container.className.indexOf('leaflet-touch') != -1) {
 				this._map.on('click', this._onTouch, this);
