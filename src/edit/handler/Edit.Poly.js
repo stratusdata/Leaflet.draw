@@ -142,6 +142,9 @@ L.Edit.Poly = L.Handler.extend({
 	},
 
 	_onMarkerClick: function (e) {
+		if(!this._poly.options.removeMarkerOnClick) {
+			return true;
+		}
 
 		var minPoints = L.Polygon && (this._poly instanceof L.Polygon) ? 4 : 3,
 			marker = e.target;
