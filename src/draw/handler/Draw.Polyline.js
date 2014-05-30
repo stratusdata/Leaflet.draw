@@ -28,11 +28,12 @@ L.Draw.Polyline = L.Draw.Feature.extend({
 			weight: 4,
 			opacity: 0.5,
 			fill: false,
-			clickable: true
+			clickable: true,
+			removeMarkerOnClick: true
 		},
 		metric: true, // Whether to use the metric meaurement system or imperial
 		showLength: true, // Whether to display distance in the tooltip
-		zIndexOffset: 2000 // This should be > than the highest z-index any map layers
+		zIndexOffset: 2000 // This should be > than the highest z-index any map layer
 	},
 
 	initialize: function (map, options) {
@@ -107,6 +108,7 @@ L.Draw.Polyline = L.Draw.Feature.extend({
 		this._cleanUpShape();
 
 		// remove markers from map
+
 		this._map.removeLayer(this._markerGroup);
 		delete this._markerGroup;
 		delete this._markers;
@@ -127,6 +129,7 @@ L.Draw.Polyline = L.Draw.Feature.extend({
 			.off('mousemove', this._onMouseMove, this)
 			.off('zoomend', this._onZoomEnd, this)
 			.off('click', this._onTouch, this);
+
 	},
 
 	deleteLastVertex: function () {

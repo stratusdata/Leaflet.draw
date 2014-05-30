@@ -13,7 +13,7 @@ L.Edit.Poly = L.Handler.extend({
 		touchIcon: new L.DivIcon({
 			iconSize: new L.Point(20, 20),
 			className: 'leaflet-div-icon leaflet-editing-icon leaflet-touch-icon'
-		}),
+		})
 	},
 
 	initialize: function (poly, options) {
@@ -145,34 +145,37 @@ L.Edit.Poly = L.Handler.extend({
 		var minPoints = L.Polygon && (this._poly instanceof L.Polygon) ? 4 : 3,
 			marker = e.target;
 
-		// If removing this point would create an invalid polyline/polygon don't remove
-		if (this._poly._latlngs.length < minPoints) {
-			return;
+		if(this._poly.options.removeMarkerOnClick) {
+			// If removing this point would create an invalid polyline/polygon don't remove
+			if (this._poly._latlngs.length < minPoints) {
+				return;
+			}
+
+			this._removeMarker(marker);
+
+			// update prev/next links of adjacent markers
+			this._updatePrevNext(marker._prev, marker._next);
+
+			// remove ghost markers near the removed marker
+			if (marker._middleLeft) {
+				this._markerGroup.removeLayer(marker._middleLeft);
+			}
+			if (marker._middleRight) {
+				this._markerGroup.removeLayer(marker._middleRight);
+			}
+
+			// create a ghost marker in place of the removed one
+			if (marker._prev && marker._next) {
+				this._createMiddleMarker(marker._prev, marker._next);
+
+			} else if (!marker._prev) {
+				marker._next._middleLeft = null;
+
+			} else if (!marker._next) {
+				marker._prev._middleRight = null;
+			}
 		}
 
-		this._removeMarker(marker);
-
-		// update prev/next links of adjacent markers
-		this._updatePrevNext(marker._prev, marker._next);
-
-		// remove ghost markers near the removed marker
-		if (marker._middleLeft) {
-			this._markerGroup.removeLayer(marker._middleLeft);
-		}
-		if (marker._middleRight) {
-			this._markerGroup.removeLayer(marker._middleRight);
-		}
-
-		// create a ghost marker in place of the removed one
-		if (marker._prev && marker._next) {
-			this._createMiddleMarker(marker._prev, marker._next);
-
-		} else if (!marker._prev) {
-			marker._next._middleLeft = null;
-
-		} else if (!marker._next) {
-			marker._prev._middleRight = null;
-		}
 		this._fireEdit();
 	},
 

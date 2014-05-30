@@ -227,11 +227,12 @@ L.Draw.Polyline = L.Draw.Feature.extend({
 			weight: 4,
 			opacity: 0.5,
 			fill: false,
-			clickable: true
+			clickable: true,
+			removeMarkerOnClick: true
 		},
 		metric: true, // Whether to use the metric meaurement system or imperial
 		showLength: true, // Whether to display distance in the tooltip
-		zIndexOffset: 2000 // This should be > than the highest z-index any map layers
+		zIndexOffset: 2000 // This should be > than the highest z-index any map layer
 	},
 
 	initialize: function (map, options) {
@@ -306,6 +307,7 @@ L.Draw.Polyline = L.Draw.Feature.extend({
 		this._cleanUpShape();
 
 		// remove markers from map
+
 		this._map.removeLayer(this._markerGroup);
 		delete this._markerGroup;
 		delete this._markers;
@@ -326,6 +328,7 @@ L.Draw.Polyline = L.Draw.Feature.extend({
 			.off('mousemove', this._onMouseMove, this)
 			.off('zoomend', this._onZoomEnd, this)
 			.off('click', this._onTouch, this);
+
 	},
 
 	deleteLastVertex: function () {
@@ -683,7 +686,8 @@ L.Draw.Polygon = L.Draw.Polyline.extend({
 			fill: true,
 			fillColor: null, //same as color by default
 			fillOpacity: 0.2,
-			clickable: true
+			clickable: true,
+			removeMarkerOnClick: true
 		}
 	},
 
@@ -1101,7 +1105,7 @@ L.Edit.Poly = L.Handler.extend({
 		touchIcon: new L.DivIcon({
 			iconSize: new L.Point(20, 20),
 			className: 'leaflet-div-icon leaflet-editing-icon leaflet-touch-icon'
-		}),
+		})
 	},
 
 	initialize: function (poly, options) {
@@ -1233,34 +1237,37 @@ L.Edit.Poly = L.Handler.extend({
 		var minPoints = L.Polygon && (this._poly instanceof L.Polygon) ? 4 : 3,
 			marker = e.target;
 
-		// If removing this point would create an invalid polyline/polygon don't remove
-		if (this._poly._latlngs.length < minPoints) {
-			return;
+		if(this._poly.options.removeMarkerOnClick) {
+			// If removing this point would create an invalid polyline/polygon don't remove
+			if (this._poly._latlngs.length < minPoints) {
+				return;
+			}
+
+			this._removeMarker(marker);
+
+			// update prev/next links of adjacent markers
+			this._updatePrevNext(marker._prev, marker._next);
+
+			// remove ghost markers near the removed marker
+			if (marker._middleLeft) {
+				this._markerGroup.removeLayer(marker._middleLeft);
+			}
+			if (marker._middleRight) {
+				this._markerGroup.removeLayer(marker._middleRight);
+			}
+
+			// create a ghost marker in place of the removed one
+			if (marker._prev && marker._next) {
+				this._createMiddleMarker(marker._prev, marker._next);
+
+			} else if (!marker._prev) {
+				marker._next._middleLeft = null;
+
+			} else if (!marker._next) {
+				marker._prev._middleRight = null;
+			}
 		}
 
-		this._removeMarker(marker);
-
-		// update prev/next links of adjacent markers
-		this._updatePrevNext(marker._prev, marker._next);
-
-		// remove ghost markers near the removed marker
-		if (marker._middleLeft) {
-			this._markerGroup.removeLayer(marker._middleLeft);
-		}
-		if (marker._middleRight) {
-			this._markerGroup.removeLayer(marker._middleRight);
-		}
-
-		// create a ghost marker in place of the removed one
-		if (marker._prev && marker._next) {
-			this._createMiddleMarker(marker._prev, marker._next);
-
-		} else if (!marker._prev) {
-			marker._next._middleLeft = null;
-
-		} else if (!marker._next) {
-			marker._prev._middleRight = null;
-		}
 		this._fireEdit();
 	},
 
