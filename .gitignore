@@ -181,3 +181,7 @@ pip-log.txt
 .idea/vcs.xml
 
 .idea/workspace.xml
+
+.idea/jsLibraryMappings.xml
+
+.idea/libraries/sds_Leaflet_draw_node_modules.xml

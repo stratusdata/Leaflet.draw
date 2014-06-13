@@ -29,18 +29,20 @@ L.Map.TouchExtend = L.Handler.extend({
 	_touchEvent: function (e, type) {
 		// #TODO: fix the pageX error that is do a bug in Android where a single touch triggers two click events
 		// _filterClick is what leaflet uses as a workaround.
-		var containerPoint = this._map.mouseEventToContainerPoint(e.touches[0]);
-			layerPoint = this._map.mouseEventToLayerPoint(e.touches[0]),
-			latlng = this._map.layerPointToLatLng(layerPoint);
+		if(e && e.touches && e.touches.length > 0) {
+			var containerPoint = this._map.mouseEventToContainerPoint(e.touches[0]);
+				layerPoint = this._map.mouseEventToLayerPoint(e.touches[0]),
+				latlng = this._map.layerPointToLatLng(layerPoint);
 
-		this._map.fire(type, {
-			latlng: latlng,
-			layerPoint: layerPoint,
-			containerPoint: containerPoint,
-			pageX: e.touches[0].pageX,
-			pageY: e.touches[0].pageY,
-			originalEvent: e
-		});
+			this._map.fire(type, {
+				latlng: latlng,
+				layerPoint: layerPoint,
+				containerPoint: containerPoint,
+				pageX: e.touches[0].pageX,
+				pageY: e.touches[0].pageY,
+				originalEvent: e
+			});
+		}
 	},
 
 	_onTouchStart: function (e) {
