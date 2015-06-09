@@ -1762,6 +1762,7 @@ L.Edit.Circle = L.Edit.SimpleShape.extend({
 
 		// Move the circle
 		this._shape.setLatLng(latlng);
+		this.fire('add');
 	},
 
 	_resize: function (latlng) {
@@ -1769,6 +1770,7 @@ L.Edit.Circle = L.Edit.SimpleShape.extend({
 			radius = moveLatLng.distanceTo(latlng);
 
 		this._shape.setRadius(radius);
+		this.fire('add');
 	}
 });
 
