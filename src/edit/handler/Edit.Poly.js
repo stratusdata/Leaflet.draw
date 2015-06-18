@@ -94,15 +94,31 @@ L.Edit.Poly = L.Handler.extend({
 		marker._origLatLng = latlng;
 		marker._index = index;
 
-		marker
-			.on('drag', this._onMarkerDrag, this)
-			.on('dragend', this._fireEdit, this)
-			.on('touchmove', this._onTouchMove, this)
-			.on('touchend', this._fireEdit, this);
+		this._bindMarker(marker);
 
 		this._markerGroup.addLayer(marker);
 
 		return marker;
+	},
+	
+	_bindMarker: function (marker) {
+		marker
+			.on('drag', this._onMarkerDrag, this)
+			.on('dragend', this._fireEdit, this)
+			//.on('touchstart', this._onTouchStart, this)
+			.on('touchmove', this._onTouchMove, this)
+			.on('touchend', this._fireEdit, this)
+			.on('click', this._onMarkerClick, this);
+	},
+
+	_unbindMarker: function (marker) {
+		marker
+			.off('drag', this._onMarkerDrag, this)
+			.off('dragend', this._fireEdit, this)
+			//.off('touchstart', this._onTouchStart, this)
+			.off('touchmove', this._onTouchMove, this)
+			.off('touchend', this._fireEdit, this)
+			.off('click', this._onMarkerClick, this);
 	},
 
 	_removeMarker: function (marker) {
@@ -113,17 +129,15 @@ L.Edit.Poly = L.Handler.extend({
 		this._poly.spliceLatLngs(i, 1);
 		this._updateIndexes(i, -1);
 
-		marker
-			.off('drag', this._onMarkerDrag, this)
-			.off('dragend', this._fireEdit, this)
-			.off('touchmove', this._onMarkerDrag, this)
-			.off('touchend', this._fireEdit, this)
-			.off('click', this._onMarkerClick, this);
+		this._unbindMarker(marker);
 	},
 
 	_fireEdit: function () {
-		this._poly.edited = true;
-		this._poly.fire('edit');
+		if (this._dragging) {
+			this._dragging = false;
+		}
+			this._poly.edited = true;
+			this._poly.fire('edit');
 	},
 
 	_onMarkerDrag: function (e) {
@@ -139,6 +153,36 @@ L.Edit.Poly = L.Handler.extend({
 		}
 
 		this._poly.redraw();
+	},
+	
+	_onTouchMove: function (e){
+
+		var layerPoint = this._map.mouseEventToLayerPoint(e.originalEvent.touches[0]),
+			latlng = this._map.layerPointToLatLng(layerPoint),
+			marker = e.target,
+			self = this;
+				
+		L.extend(marker._origLatLng, latlng);
+
+		marker.setLatLng(latlng);
+		
+		if (marker._middleLeft) {
+			marker._middleLeft.setLatLng(this._getMiddleLatLng(marker._prev, marker));
+		}
+		if (marker._middleRight) {
+			marker._middleRight.setLatLng(this._getMiddleLatLng(marker, marker._next));
+		}
+
+		this._poly.redraw();
+		
+		//touchend / touchcancel is not firing
+		if (this._dragTimer) {
+			window.clearTimeout(this._dragTimer);
+		}
+		this._dragging = true;
+		this._dragTimer = window.setTimeout(function () {
+			self._fireEdit(e);
+		}, 250);
 	},
 
 	_onMarkerClick: function (e) {
@@ -177,25 +221,6 @@ L.Edit.Poly = L.Handler.extend({
 		}
 
 		this._fireEdit();
-	},
-
-	_onTouchMove: function (e){
-
-		var layerPoint = this._map.mouseEventToLayerPoint(e.originalEvent.touches[0]),
-			latlng = this._map.layerPointToLatLng(layerPoint),
-			marker = e.target;
-				
-		L.extend(marker._origLatLng, latlng);
-
-		if (marker._middleLeft) {
-			marker._middleLeft.setLatLng(this._getMiddleLatLng(marker._prev, marker));
-		}
-		if (marker._middleRight) {
-			marker._middleRight.setLatLng(this._getMiddleLatLng(marker, marker._next));
-		}
-
-		this._poly.redraw();
-		this.updateMarkers();
 	},
 
 	_updateIndexes: function (index, delta) {
