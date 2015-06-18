@@ -68,17 +68,20 @@ L.Edit.Rectangle = L.Edit.SimpleShape.extend({
 
 		// Reposition the resize markers
 		this._repositionCornerMarkers();
+		
+		this._repositionMoveMarker();
 	},
-
+	
 	_resize: function (latlng) {
-		var bounds;
-
 		// Update the shape based on the current position of this corner and the opposite point
-		this._shape.setBounds(L.latLngBounds(latlng, this._oppositeCorner));
-
-		// Reposition the move marker
-		bounds = this._shape.getBounds();
-		this._moveMarker.setLatLng(bounds.getCenter());
+		if (this._oppositeCorner) {
+			this._shape.setBounds(L.latLngBounds(latlng, this._oppositeCorner));
+		}
+		
+		// Reposition the resize markers
+		this._repositionCornerMarkers();
+		
+		this._repositionMoveMarker();
 	},
 
 	_getCorners: function () {
@@ -103,6 +106,11 @@ L.Edit.Rectangle = L.Edit.SimpleShape.extend({
 		for (var i = 0, l = this._resizeMarkers.length; i < l; i++) {
 			this._resizeMarkers[i].setLatLng(corners[i]);
 		}
+	},
+	_repositionMoveMarker: function () {
+		var bounds = this._shape.getBounds();
+		var center = bounds.getCenter();
+		this._moveMarker.setLatLng(center);
 	}
 });
 

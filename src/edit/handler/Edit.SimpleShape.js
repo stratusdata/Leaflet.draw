@@ -47,13 +47,17 @@ L.Edit.SimpleShape = L.Handler.extend({
 		if (this._shape._map) {
 			this._unbindMarker(this._moveMarker);
 
-			for (var i = 0, l = this._resizeMarkers.length; i < l; i++) {
-				this._unbindMarker(this._resizeMarkers[i]);
+			if (this._resizeMarkers) {
+				for (var i = 0, l = this._resizeMarkers.length; i < l; i++) {
+					this._unbindMarker(this._resizeMarkers[i]);
+				}
 			}
 			this._resizeMarkers = null;
 
-			this._map.removeLayer(this._markerGroup);
-			delete this._markerGroup;
+			if (this._markerGroup) {
+				this._map.removeLayer(this._markerGroup);
+				delete this._markerGroup;
+			}
 		}
 
 		this._map = null;
@@ -104,7 +108,7 @@ L.Edit.SimpleShape = L.Handler.extend({
 			.on('dragstart', this._onMarkerDragStart, this)
 			.on('drag', this._onMarkerDrag, this)
 			.on('dragend', this._onMarkerDragEnd, this)
-			.on('touchstart', this._onTouchStart, this)
+			//.on('touchstart', this._onTouchStart, this)
 			.on('touchmove', this._onTouchMove, this)
 			.on('touchend', this._onTouchEnd, this);
 	},
@@ -114,7 +118,7 @@ L.Edit.SimpleShape = L.Handler.extend({
 			.off('dragstart', this._onMarkerDragStart, this)
 			.off('drag', this._onMarkerDrag, this)
 			.off('dragend', this._onMarkerDragEnd, this)
-			.off('touchstart', this._onTouchStart, this)
+			//.off('touchstart', this._onTouchStart, this)
 			.off('touchmove', this._onTouchMove, this)
 			.off('touchend', this._onTouchEnd, this);
 	},
@@ -126,7 +130,7 @@ L.Edit.SimpleShape = L.Handler.extend({
 		this._shape.fire('editstart');
 	},
 
-	_fireEdit: function () {
+	_fireEdit: function (e) {
 		this._shape.edited = true;
 		this._shape.fire('edit');
 	},
@@ -147,7 +151,7 @@ L.Edit.SimpleShape = L.Handler.extend({
 	_onMarkerDragEnd: function (e) {
 		var marker = e.target;
 		marker.setOpacity(1);
-
+		this.updateMarkers();
 		this._fireEdit();
 	},
 
@@ -172,28 +176,47 @@ L.Edit.SimpleShape = L.Handler.extend({
 	},
 
 	_onTouchMove: function (e) {
-		var layerPoint = this._map.mouseEventToLayerPoint(e.originalEvent.touches[0]),
-			latlng = this._map.layerPointToLatLng(layerPoint),
+		var self = this;
+		self._isDragging = true;
+		window.setTimeout(function () {
+			var layerPoint = self._map.mouseEventToLayerPoint(e.originalEvent.touches[0]),
+			latlng = self._map.layerPointToLatLng(layerPoint),
 			marker = e.target;
-
-		if (marker === this._moveMarker) {
-			this._move(latlng);
-		} else {
-			this._resize(latlng);
-		}
-
-		this._shape.redraw();
 		
-		// prevent touchcancel in IOS
-		// e.preventDefault();
-		return false;
+			marker.setOpacity(0);
+		
+			if (typeof(self._getCorners) === "function") { 	
+				var corners = self._getCorners();
+				self._oppositeCorner = corners[(marker._cornerIndex + 2) % 4];
+			}
+			
+			if (marker === self._moveMarker) {
+				self._move(latlng);
+			} else {
+				self._resize(latlng);
+			}
+	
+			self._shape.redraw();
+		}, 0);
+		
+		
+		//touchend / touchcancel is not firing
+		if (this._dragTimer) {
+			window.clearTimeout(this._dragTimer);
+		}
+		this._dragTimer = window.setTimeout(function () {
+			self._onTouchEnd(e);
+		}, 250);
 	},
 
 	_onTouchEnd: function (e) {
-		var marker = e.target;
-		marker.setOpacity(1);
-		this.updateMarkers();
-		this._fireEdit();
+		if (this._isDragging) {
+			this._isDragging = false;
+			var marker = e.target;
+			marker.setOpacity(1);
+			this.updateMarkers();
+			this._fireEdit();
+		}
 	},
 
 	_move: function () {
