@@ -1186,15 +1186,31 @@ L.Edit.Poly = L.Handler.extend({
 		marker._origLatLng = latlng;
 		marker._index = index;
 
-		marker
-			.on('drag', this._onMarkerDrag, this)
-			.on('dragend', this._fireEdit, this)
-			.on('touchmove', this._onTouchMove, this)
-			.on('touchend', this._fireEdit, this);
+		this._bindMarker(marker);
 
 		this._markerGroup.addLayer(marker);
 
 		return marker;
+	},
+	
+	_bindMarker: function (marker) {
+		marker
+			.on('drag', this._onMarkerDrag, this)
+			.on('dragend', this._fireEdit, this)
+			//.on('touchstart', this._onTouchStart, this)
+			.on('touchmove', this._onTouchMove, this)
+			.on('touchend', this._fireEdit, this)
+			.on('click', this._onMarkerClick, this);
+	},
+
+	_unbindMarker: function (marker) {
+		marker
+			.off('drag', this._onMarkerDrag, this)
+			.off('dragend', this._fireEdit, this)
+			//.off('touchstart', this._onTouchStart, this)
+			.off('touchmove', this._onTouchMove, this)
+			.off('touchend', this._fireEdit, this)
+			.off('click', this._onMarkerClick, this);
 	},
 
 	_removeMarker: function (marker) {
@@ -1205,21 +1221,20 @@ L.Edit.Poly = L.Handler.extend({
 		this._poly.spliceLatLngs(i, 1);
 		this._updateIndexes(i, -1);
 
-		marker
-			.off('drag', this._onMarkerDrag, this)
-			.off('dragend', this._fireEdit, this)
-			.off('touchmove', this._onMarkerDrag, this)
-			.off('touchend', this._fireEdit, this)
-			.off('click', this._onMarkerClick, this);
+		this._unbindMarker(marker);
 	},
 
 	_fireEdit: function () {
-		this._poly.edited = true;
-		this._poly.fire('edit');
+		if (this._dragging) {
+			this._dragging = false;
+		}
+			this._poly.edited = true;
+			this._poly.fire('edit');
 	},
 
 	_onMarkerDrag: function (e) {
-		var marker = e.target;
+		var marker = e.target,
+				self = this;
 
 		L.extend(marker._origLatLng, marker._latlng);
 
@@ -1231,6 +1246,36 @@ L.Edit.Poly = L.Handler.extend({
 		}
 
 		this._poly.redraw();
+	},
+	
+	_onTouchMove: function (e){
+
+		var layerPoint = this._map.mouseEventToLayerPoint(e.originalEvent.touches[0]),
+			latlng = this._map.layerPointToLatLng(layerPoint),
+			marker = e.target,
+			self = this;
+				
+		L.extend(marker._origLatLng, latlng);
+
+		marker.setLatLng(latlng);
+		
+		if (marker._middleLeft) {
+			marker._middleLeft.setLatLng(this._getMiddleLatLng(marker._prev, marker));
+		}
+		if (marker._middleRight) {
+			marker._middleRight.setLatLng(this._getMiddleLatLng(marker, marker._next));
+		}
+
+		this._poly.redraw();
+		
+		//touchend / touchcancel is not firing
+		if (this._dragTimer) {
+			window.clearTimeout(this._dragTimer);
+		}
+		this._dragging = true;
+		this._dragTimer = window.setTimeout(function () {
+			self._fireEdit(e);
+		}, 250);
 	},
 
 	_onMarkerClick: function (e) {
@@ -1269,25 +1314,6 @@ L.Edit.Poly = L.Handler.extend({
 		}
 
 		this._fireEdit();
-	},
-
-	_onTouchMove: function (e){
-
-		var layerPoint = this._map.mouseEventToLayerPoint(e.originalEvent.touches[0]),
-			latlng = this._map.layerPointToLatLng(layerPoint),
-			marker = e.target;
-				
-		L.extend(marker._origLatLng, latlng);
-
-		if (marker._middleLeft) {
-			marker._middleLeft.setLatLng(this._getMiddleLatLng(marker._prev, marker));
-		}
-		if (marker._middleRight) {
-			marker._middleRight.setLatLng(this._getMiddleLatLng(marker, marker._next));
-		}
-
-		this._poly.redraw();
-		this.updateMarkers();
 	},
 
 	_updateIndexes: function (index, delta) {
@@ -1452,13 +1478,17 @@ L.Edit.SimpleShape = L.Handler.extend({
 		if (this._shape._map) {
 			this._unbindMarker(this._moveMarker);
 
-			for (var i = 0, l = this._resizeMarkers.length; i < l; i++) {
-				this._unbindMarker(this._resizeMarkers[i]);
+			if (this._resizeMarkers) {
+				for (var i = 0, l = this._resizeMarkers.length; i < l; i++) {
+					this._unbindMarker(this._resizeMarkers[i]);
+				}
 			}
 			this._resizeMarkers = null;
 
-			this._map.removeLayer(this._markerGroup);
-			delete this._markerGroup;
+			if (this._markerGroup) {
+				this._map.removeLayer(this._markerGroup);
+				delete this._markerGroup;
+			}
 		}
 
 		this._map = null;
@@ -1509,7 +1539,7 @@ L.Edit.SimpleShape = L.Handler.extend({
 			.on('dragstart', this._onMarkerDragStart, this)
 			.on('drag', this._onMarkerDrag, this)
 			.on('dragend', this._onMarkerDragEnd, this)
-			.on('touchstart', this._onTouchStart, this)
+			//.on('touchstart', this._onTouchStart, this)
 			.on('touchmove', this._onTouchMove, this)
 			.on('touchend', this._onTouchEnd, this);
 	},
@@ -1519,7 +1549,7 @@ L.Edit.SimpleShape = L.Handler.extend({
 			.off('dragstart', this._onMarkerDragStart, this)
 			.off('drag', this._onMarkerDrag, this)
 			.off('dragend', this._onMarkerDragEnd, this)
-			.off('touchstart', this._onTouchStart, this)
+			//.off('touchstart', this._onTouchStart, this)
 			.off('touchmove', this._onTouchMove, this)
 			.off('touchend', this._onTouchEnd, this);
 	},
@@ -1531,7 +1561,7 @@ L.Edit.SimpleShape = L.Handler.extend({
 		this._shape.fire('editstart');
 	},
 
-	_fireEdit: function () {
+	_fireEdit: function (e) {
 		this._shape.edited = true;
 		this._shape.fire('edit');
 	},
@@ -1552,7 +1582,7 @@ L.Edit.SimpleShape = L.Handler.extend({
 	_onMarkerDragEnd: function (e) {
 		var marker = e.target;
 		marker.setOpacity(1);
-
+		this.updateMarkers();
 		this._fireEdit();
 	},
 
@@ -1577,28 +1607,47 @@ L.Edit.SimpleShape = L.Handler.extend({
 	},
 
 	_onTouchMove: function (e) {
-		var layerPoint = this._map.mouseEventToLayerPoint(e.originalEvent.touches[0]),
-			latlng = this._map.layerPointToLatLng(layerPoint),
+		var self = this;
+		self._isDragging = true;
+		window.setTimeout(function () {
+			var layerPoint = self._map.mouseEventToLayerPoint(e.originalEvent.touches[0]),
+			latlng = self._map.layerPointToLatLng(layerPoint),
 			marker = e.target;
-
-		if (marker === this._moveMarker) {
-			this._move(latlng);
-		} else {
-			this._resize(latlng);
-		}
-
-		this._shape.redraw();
 		
-		// prevent touchcancel in IOS
-		// e.preventDefault();
-		return false;
+			marker.setOpacity(0);
+		
+			if (typeof(self._getCorners) === "function") { 	
+				var corners = self._getCorners();
+				self._oppositeCorner = corners[(marker._cornerIndex + 2) % 4];
+			}
+			
+			if (marker === self._moveMarker) {
+				self._move(latlng);
+			} else {
+				self._resize(latlng);
+			}
+	
+			self._shape.redraw();
+		}, 0);
+		
+		
+		//touchend / touchcancel is not firing
+		if (this._dragTimer) {
+			window.clearTimeout(this._dragTimer);
+		}
+		this._dragTimer = window.setTimeout(function () {
+			self._onTouchEnd(e);
+		}, 250);
 	},
 
 	_onTouchEnd: function (e) {
-		var marker = e.target;
-		marker.setOpacity(1);
-		this.updateMarkers();
-		this._fireEdit();
+		if (this._isDragging) {
+			this._isDragging = false;
+			var marker = e.target;
+			marker.setOpacity(1);
+			this.updateMarkers();
+			this._fireEdit();
+		}
 	},
 
 	_move: function () {
@@ -1681,17 +1730,20 @@ L.Edit.Rectangle = L.Edit.SimpleShape.extend({
 
 		// Reposition the resize markers
 		this._repositionCornerMarkers();
+		
+		this._repositionMoveMarker();
 	},
-
+	
 	_resize: function (latlng) {
-		var bounds;
-
 		// Update the shape based on the current position of this corner and the opposite point
-		this._shape.setBounds(L.latLngBounds(latlng, this._oppositeCorner));
-
-		// Reposition the move marker
-		bounds = this._shape.getBounds();
-		this._moveMarker.setLatLng(bounds.getCenter());
+		if (this._oppositeCorner) {
+			this._shape.setBounds(L.latLngBounds(latlng, this._oppositeCorner));
+		}
+		
+		// Reposition the resize markers
+		this._repositionCornerMarkers();
+		
+		this._repositionMoveMarker();
 	},
 
 	_getCorners: function () {
@@ -1716,6 +1768,11 @@ L.Edit.Rectangle = L.Edit.SimpleShape.extend({
 		for (var i = 0, l = this._resizeMarkers.length; i < l; i++) {
 			this._resizeMarkers[i].setLatLng(corners[i]);
 		}
+	},
+	_repositionMoveMarker: function () {
+		var bounds = this._shape.getBounds();
+		var center = bounds.getCenter();
+		this._moveMarker.setLatLng(center);
 	}
 });
 
@@ -1762,7 +1819,6 @@ L.Edit.Circle = L.Edit.SimpleShape.extend({
 
 		// Move the circle
 		this._shape.setLatLng(latlng);
-		this.fire('add');
 	},
 
 	_resize: function (latlng) {
@@ -1770,7 +1826,6 @@ L.Edit.Circle = L.Edit.SimpleShape.extend({
 			radius = moveLatLng.distanceTo(latlng);
 
 		this._shape.setRadius(radius);
-		this.fire('add');
 	}
 });
 
